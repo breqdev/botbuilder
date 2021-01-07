@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, redirect, url_for
+from flask import Flask, render_template, session, redirect, url_for
 
 import login
 import dashboard
@@ -15,7 +15,9 @@ app.register_blueprint(dashboard.bp, url_prefix="/dashboard")
 
 @app.route("/")
 def index():
-    return redirect(url_for("login.index"))
+    if "oauth2_token" in session:
+        return redirect(url_for("dashboard.index"))
+    return render_template("index.html")
 
 
 if __name__ == '__main__':
