@@ -1,0 +1,65 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.box {
+  display: flex;
+  flex-flow: row;
+  height: 100%;
+  width: 100%;
+}
+
+.user-banner {
+    padding: 20px;
+    text-align: center;
+    background-color: #1BB3FF;
+    color: #000;
+}
+
+.brand {
+    font-size: 40px;
+    text-align: left;
+}
+
+.userinfo {
+    text-align: right;
+}
+
+.discriminator {
+    color: #555;
+}
+
+img.avatar {
+    width: 64px;
+    height: 64px;
+    margin-left: 20px;
+    border-radius: 32px;
+}
+
+.blockly-editor {
+    height: 100%;
+    flex-basis: 60%;
+}
+
+.blockly-header {
+    padding: 20px;
+    position: relative;
+}
+
+.window-title {
+    font-size: 30px;
+    color: #000;
+}
+
+#saveIndicator {
+    position: absolute;
+    padding: inherit;
+    bottom: 0;
+    right: 0;
+    font-style: italic;
+}
+
+#blocklyArea {
+    height: 100%;
+}
