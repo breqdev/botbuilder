@@ -39,7 +39,13 @@ img.avatar {
 
 .blockly-editor {
     height: 100%;
-    flex-basis: 60%;
+    flex-grow: 1;
+}
+
+.sidebar {
+    flex-basis: 500px;
+    flex-grow: 0;
+    padding: 20px;
 }
 
 .blockly-header {
@@ -62,4 +68,20 @@ img.avatar {
 
 #blocklyArea {
     height: 100%;
+}
+
+#commandsList {
+    font-family: monospace;
+    line-height: 1.5;
+    list-style: none;
+    padding: 0;
+}
+
+#commandsList li::before {
+    content: "/";
+    color: #555;
+}
+
+#commandsList li {
+    color: #000;
 }

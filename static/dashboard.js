@@ -108,15 +108,16 @@ function generateCode() {
         }
     }
     // Add each top block one by one and generate code.
-    var allCode = [];
+    var allCode = {};
     for (var i = 0, block; block = topBlocks[i]; i++) {
         var headless = new Blockly.Workspace();
         if (block.attributes.type.value != "on_command") {
             continue;
         }
+        var command_name = block.firstChild.innerHTML;
         xml.appendChild(block);
         Blockly.Xml.domToWorkspace(xml, headless);
-        allCode.push(Blockly.JavaScript.workspaceToCode(headless));
+        allCode[command_name] = Blockly.JavaScript.workspaceToCode(headless);
         headless.dispose();
         xml.removeChild(block);
     }
@@ -125,14 +126,14 @@ function generateCode() {
 
 function displayCode(event) {
     var code = generateCode();
-    output = document.getElementById('output');
+    output = document.getElementById('commandsList');
 
     while (output.firstChild) {
         output.removeChild(output.firstChild);
     }
 
-    for (const command of code) {
-        var pre = document.createElement('pre');
+    for (const command in code) {
+        var pre = document.createElement('li');
         pre.innerHTML = command;
         output.appendChild(pre);
     }
