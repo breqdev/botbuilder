@@ -34,10 +34,7 @@ Blockly.JavaScript['on_command'] = function(block) {
     var text_command_name = block.getFieldValue('command_name');
     var statements_code = Blockly.JavaScript.statementToCode(block, 'Code');
     var value_return = Blockly.JavaScript.valueToCode(block, 'Return', Blockly.JavaScript.ORDER_ATOMIC);
-    var code = `function() {
-${statements_code}
-  return ${value_return};
-}\n`;
+    var code = `var LoopTrap=1000;\n\n${statements_code}\nreturn ${value_return};\n`;
     return code;
 };
 
@@ -61,8 +58,7 @@ var options = {
     oneBasedIndex : true
 };
 
-window.LoopTrap = 1000;
-Blockly.JavaScript.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
+Blockly.JavaScript.INFINITE_LOOP_TRAP = 'if(LoopTrap == 0) throw "Infinite loop.";\n';
 
 
 // Inject workspace

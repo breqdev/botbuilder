@@ -4,7 +4,9 @@ from flask import (Blueprint, session, render_template, request, current_app,
                    send_file, Response)
 
 from login import make_session
+import redis
 
+db = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
 
 bp = Blueprint(__name__, "dashboard")
 
@@ -43,10 +45,22 @@ def save():
 
     commands = request.files.getlist("command")
 
+    db.delete(f"user:{user['id']}:commands")
+
     for command in commands:
         if not command.filename.endswith(".js"):
             continue
         command.save(os.path.join(user_directory, command.filename))
+
+        db.sadd(f"user:{user['id']}:commands", command.filename[:-3])
+
+    # Update guilds mapping
+
+    guilds = discord.get("https://discord.com/api/v8/users/@me/guilds").json()
+
+    for guild in guilds:
+        if int(guild["permissions"]) & 8:
+            db.sadd(f"guild:{guild['id']}:users", user["id"])
 
     return "", 200
 

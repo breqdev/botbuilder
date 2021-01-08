@@ -35,7 +35,7 @@ def make_session(token=None, state=None, scope=None):
 
 @bp.route("/")
 def index():
-    discord = make_session(scope=["identify", "email"])
+    discord = make_session(scope=["identify", "email", "guilds"])
     authorization_url, state = discord.authorization_url(
         "https://discord.com/api/v8/oauth2/authorize")
     session['oauth2_state'] = state
