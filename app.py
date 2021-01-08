@@ -4,6 +4,7 @@ from flask import Flask, render_template, session, redirect, url_for
 
 import login
 import dashboard
+import interactions
 
 
 app = Flask(__name__)
@@ -12,6 +13,7 @@ app.config["UPLOAD_FOLDER"] = "storage"
 
 app.register_blueprint(login.bp, url_prefix="/login")
 app.register_blueprint(dashboard.bp, url_prefix="/dashboard")
+app.register_blueprint(interactions.bp)
 
 
 @app.route("/")

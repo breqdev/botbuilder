@@ -34,10 +34,10 @@ Blockly.JavaScript['on_command'] = function(block) {
     var text_command_name = block.getFieldValue('command_name');
     var statements_code = Blockly.JavaScript.statementToCode(block, 'Code');
     var value_return = Blockly.JavaScript.valueToCode(block, 'Return', Blockly.JavaScript.ORDER_ATOMIC);
-    var code = `commands["${text_command_name}"] = function() {
+    var code = `function() {
 ${statements_code}
   return ${value_return};
-})\n`;
+}\n`;
     return code;
 };
 
@@ -168,8 +168,15 @@ function save() {
     let xml_text = Blockly.Xml.domToText(xml);
     let xml_blob = new Blob([xml_text], { type: "text/xml"});
 
+    let code = generateCode();
     let form = new FormData();
-    form.append("file", xml_blob);
+
+    for (const command in code) {
+        let code_blob = new Blob([code[command]], { type: "text/javascript" });
+        form.append("command", code_blob, `${command}.js`);
+    }
+
+    form.append("workspace", xml_blob, "workspace.xml");
     return fetch("/dashboard/save", {method: "POST", body: form});
 }
 
