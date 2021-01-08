@@ -1,7 +1,204 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h1>Logged in as {{ user['username'] }}#{{ user['discriminator'] }}</h1>
-<p>Email address {{ user['email'] }}</p>
+<!-- Blockly core -->
+<script src="{{ url_for('static', filename='blockly/blockly_compressed.js') }}"></script>
+<!-- Core blocks set -->
+<script src="{{ url_for('static', filename='blockly/blocks_compressed.js') }}"></script>
+<!-- English messages -->
+<script src="{{ url_for('static', filename='blockly/msg/js/en.js') }}"></script>
+<!-- JavaScript render -->
+<script src="{{ url_for('static', filename='blockly/javascript_compressed.js') }}"></script>
+
+<!-- Blockly toolbox -->
+{% include 'blockly/toolbox.html' %}
+
+
+
+<style>
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.box {
+  display: flex;
+  flex-flow: row;
+  height: 100%;
+  width: 100%;
+}
+
+.user-banner {
+    padding: 20px;
+    text-align: center;
+    background-color: #1BB3FF;
+}
+
+.user-banner span {
+    color: #000;
+}
+
+#blocklyArea {
+    height: 100%;
+    flex-basis: 60%;
+}
+
+</style>
+
+<div class="user-banner">
+    <span>Logged in as {{ user['username'] }}#{{ user['discriminator'] }}</span>
+</div>
+
+<div class="box">
+    <div class="col" id="blocklyArea"></div>
+    <div class="col" id="blocklyDiv" style="position: absolute"></div>
+    <div class="col" id="output"></pre>
+</div>
+
+<script>
+
+Blockly.defineBlocksWithJsonArray([{
+  "type": "on_command",
+  "message0": "On command / %1 %2 %3 Return Message %4",
+  "args0": [
+    {
+      "type": "field_input",
+      "name": "command_name",
+      "text": "command"
+    },
+    {
+      "type": "input_dummy"
+    },
+    {
+      "type": "input_statement",
+      "name": "Code"
+    },
+    {
+      "type": "input_value",
+      "name": "Return",
+      "check": "String"
+    }
+  ],
+  "inputsInline": false,
+  "colour": 230,
+  "tooltip": "",
+  "helpUrl": ""
+}]);
+
+
+
+Blockly.JavaScript['on_command'] = function(block) {
+  var text_command_name = block.getFieldValue('command_name');
+  var statements_code = Blockly.JavaScript.statementToCode(block, 'Code');
+  var value_return = Blockly.JavaScript.valueToCode(block, 'Return', Blockly.JavaScript.ORDER_ATOMIC);
+  var code = `commands["${text_command_name}"] = function() {
+${statements_code}
+  return ${value_return};
+})\n`;
+  return code;
+};
+
+
+/* TODO: Change toolbox XML ID if necessary. Can export toolbox XML from Workspace Factory. */
+var toolbox = document.getElementById("toolbox");
+
+var options = {
+	toolbox : toolbox,
+	collapse : false,
+	comments : false,
+	disable : false,
+	maxBlocks : Infinity,
+	trashcan : false,
+	horizontalLayout : false,
+	toolboxPosition : 'start',
+	css : true,
+	media : 'https://blockly-demo.appspot.com/static/media/',
+	rtl : false,
+	scrollbars : false,
+	sounds : true,
+	oneBasedIndex : true
+};
+
+window.LoopTrap = 1000;
+Blockly.JavaScript.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
+
+/* Inject your workspace */
+var workspace = Blockly.inject(document.getElementById('blocklyDiv'), options);
+
+workspace.addChangeListener(Blockly.Events.disableOrphans);
+
+var blocklyArea = document.getElementById('blocklyArea');
+var blocklyDiv = document.getElementById('blocklyDiv');
+
+var onresize = function(e) {
+  // Compute the absolute coordinates and dimensions of blocklyArea.
+  var element = blocklyArea;
+  var x = 0;
+  var y = 0;
+  do {
+    x += element.offsetLeft;
+    y += element.offsetTop;
+    element = element.offsetParent;
+  } while (element);
+  // Position blocklyDiv over blocklyArea.
+  blocklyDiv.style.left = x + 'px';
+  blocklyDiv.style.top = y + 'px';
+  blocklyDiv.style.width = blocklyArea.offsetWidth + 'px';
+  blocklyDiv.style.height = blocklyArea.offsetHeight + 'px';
+  Blockly.svgResize(workspace);
+};
+window.addEventListener('resize', onresize, false);
+onresize();
+Blockly.svgResize(workspace);
+
+
+function generateCode() {
+    var xml = Blockly.Xml.workspaceToDom(workspace);
+    // Find and remove all top blocks.
+    var topBlocks = [];
+    for (var i = xml.childNodes.length - 1, node; block = xml.childNodes[i]; i--) {
+      if (block.tagName == 'block') {
+        xml.removeChild(block);
+        topBlocks.unshift(block);
+      }
+    }
+    // Add each top block one by one and generate code.
+    var allCode = [];
+    for (var i = 0, block; block = topBlocks[i]; i++) {
+      var headless = new Blockly.Workspace();
+      if (block.attributes.type.value != "on_command") {
+        continue;
+      }
+      xml.appendChild(block);
+      Blockly.Xml.domToWorkspace(xml, headless);
+      allCode.push(Blockly.JavaScript.workspaceToCode(headless));
+      headless.dispose();
+      xml.removeChild(block);
+    }
+    return allCode;
+}
+
+
+function myUpdateFunction(event) {
+  var code = generateCode();
+  output = document.getElementById('output');
+
+  while (output.firstChild) {
+    output.removeChild(output.firstChild);
+  }
+
+  console.log(code);
+
+  for (const command of code) {
+    var pre = document.createElement('pre');
+    pre.innerHTML = command;
+    output.appendChild(pre);
+  }
+}
+workspace.addChangeListener(myUpdateFunction);
+
+
+</script>
 
 {% endblock %}
