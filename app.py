@@ -8,6 +8,7 @@ import dashboard
 
 app = Flask(__name__)
 app.secret_key = os.environ["DISCORD_CLIENT_SECRET"]
+app.config["UPLOAD_FOLDER"] = "storage"
 
 app.register_blueprint(login.bp, url_prefix="/login")
 app.register_blueprint(dashboard.bp, url_prefix="/dashboard")

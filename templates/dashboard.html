@@ -48,6 +48,7 @@ html, body {
 
 <div class="user-banner">
     <span>Logged in as {{ user['username'] }}#{{ user['discriminator'] }}</span>
+    <button class="btn btn-primary" onclick="save()">Save</button>
 </div>
 
 <div class="box">
@@ -198,6 +199,24 @@ function myUpdateFunction(event) {
 }
 workspace.addChangeListener(myUpdateFunction);
 
+function save() {
+    let xml = Blockly.Xml.workspaceToDom(workspace);
+    let xml_text = Blockly.Xml.domToText(xml);
+    let xml_blob = new Blob([xml_text], { type: "text/xml"});
+
+    let form = new FormData();
+    form.append("file", xml_blob);
+    fetch("{{ url_for('dashboard.save') }}", {method: "POST", body: form});
+}
+
+function load() {
+    fetch("{{ url_for('dashboard.load') }}", {cache: "no-store"})
+        .then(response => response.text())
+        .then(xml_text => Blockly.Xml.textToDom(xml_text))
+        .then(xml => Blockly.Xml.domToWorkspace(xml, workspace));
+}
+
+window.addEventListener('load', load);
 
 </script>
 
