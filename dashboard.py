@@ -6,7 +6,7 @@ from login import make_session
 import redis
 import minio
 
-from commands_update import register_command, delete_commands
+from commands_update import overwrite_commands
 
 db = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
 storage = minio.Minio(
@@ -56,11 +56,19 @@ def save():
 
     storage.put_object("botbuilder", f"{user['id']}/workspace.xml", workspace, size)
 
-    # Delete existing commands
+    # Get the difference between old and new commands
 
-    for guild in guilds:
-        delete_commands(
-            guild["id"], db.smembers(f"user:{user['id']}:commands"))
+    current_commands = db.smembers(f"user:{user['id']}:commands")
+    updated_commands = [
+        file.filename[:-3] for file in request.files.getlist("command")
+        if file.filename.endswith(".js")
+    ]
+
+    if set(current_commands) != set(updated_commands):
+        for guild in guilds:
+            overwrite_commands(guild["id"], updated_commands)
+
+    # Delete existing commands
 
     for command in db.smembers(f"user:{user['id']}:commands"):
         storage.remove_object("botbuilder", f"{user['id']}/{command}.js")
@@ -79,9 +87,6 @@ def save():
         storage.put_object("botbuilder", f"{user['id']}/{command.filename}", command, size)
 
         db.sadd(f"user:{user['id']}:commands", command.filename[:-3])
-
-        for guild in guilds:
-            register_command(guild["id"], command.filename[:-3])
 
     return "", 200
 

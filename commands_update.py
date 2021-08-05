@@ -35,40 +35,22 @@ def auth_headers():
     return {"Authorization": f"Bearer {own_token['access_token']}"}
 
 
-def register_command(guild_id, command_name):
+def overwrite_commands(guild_id, command_names):
     url = ("https://discord.com/api/v8/applications/"
            f"{OAUTH2_CLIENT_ID}/"
            f"guilds/{guild_id}/commands")
 
-    json = {
-        "name": command_name,
-        "description": "Made with <3 and BotBuilder by Breq",
-        "options": []
-    }
+    json = [
+        {
+            "name": command_name,
+            "description": "Made with <3 and BotBuilder by Breq",
+            "options": []
+        } for command_name in command_names
+    ]
 
-    response = requests.post(url, json=json, headers=auth_headers())
+    response = requests.put(url, json=json, headers=auth_headers())
 
     if response.status_code == 403:
         return  # User hasn't granted permission for this guild, fail silently
 
     response.raise_for_status()
-
-
-def delete_commands(guild_id, command_names):
-    url = ("https://discord.com/api/v8/applications/"
-           f"{OAUTH2_CLIENT_ID}/"
-           f"guilds/{guild_id}/commands")
-
-    response = requests.get(url, headers=auth_headers())
-
-    if response.status_code == 403:
-        return  # User hasn't granted permission for this guild, fail silently
-
-    response.raise_for_status()
-    all_commands = response.json()
-
-    for command in all_commands:
-        if command["name"] in command_names:
-            response = requests.delete(
-                url+"/"+command["id"], headers=auth_headers())
-            response.raise_for_status()
