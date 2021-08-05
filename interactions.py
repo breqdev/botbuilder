@@ -2,21 +2,26 @@ import os
 from py_mini_racer import py_mini_racer
 from flask import Blueprint, current_app, request, jsonify
 import redis
+import minio
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
 
 db = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+storage = minio.Minio(
+    os.environ["MINIO_ENDPOINT"],
+    access_key=os.environ["MINIO_ACCESS_KEY"],
+    secret_key=os.environ["MINIO_SECRET_KEY"]
+)
 
 
 def run_user_command(user_id, command_name):
-    command_path = os.path.join(
-        current_app.config["UPLOAD_FOLDER"], user_id, f"{command_name}.js")
-
-    if not os.path.exists(command_path):
+    try:
+        command_fn = storage.get_object(
+            "botbuilder", f"{user_id}/{command_name}.js")
+    except minio.error.S3Error:
         return "Command Not Found", 404
 
-    with open(command_path) as f:
-        command_fn = f.read()
+    command_fn = command_fn.read(decode_content=True)
 
     ctx = py_mini_racer.MiniRacer()
 
