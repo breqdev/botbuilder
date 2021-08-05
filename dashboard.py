@@ -1,14 +1,19 @@
 import os
 
-from flask import (Blueprint, session, render_template, request, current_app,
-                   send_file, Response)
+from flask import Blueprint, session, render_template, request, Response
 
 from login import make_session
 import redis
+import minio
 
 from commands_update import register_command, delete_commands
 
 db = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+storage = minio.Minio(
+    os.environ["MINIO_ENDPOINT"],
+    access_key=os.environ["MINIO_ACCESS_KEY"],
+    secret_key=os.environ["MINIO_SECRET_KEY"]
+)
 
 bp = Blueprint(__name__, "dashboard")
 
@@ -25,12 +30,6 @@ def index():
 def save():
     discord = make_session(token=session.get('oauth2_token'))
     user = discord.get("https://discord.com/api/v8/users/@me").json()
-
-    user_directory = os.path.join(
-        current_app.config["UPLOAD_FOLDER"], user["id"])
-
-    if not os.path.exists(user_directory):
-        os.mkdir(user_directory)
 
     # Update guilds mapping
 
@@ -53,7 +52,9 @@ def save():
     if not workspace or workspace.filename == '':
         return "No selected file", 400
 
-    workspace.save(os.path.join(user_directory, "workspace.xml"))
+    size = os.fstat(workspace.fileno()).st_size
+
+    storage.put_object("botbuilder", f"{user['id']}/workspace.xml", workspace, size)
 
     # Delete existing commands
 
@@ -61,11 +62,10 @@ def save():
         delete_commands(
             guild["id"], db.smembers(f"user:{user['id']}:commands"))
 
-    db.delete(f"user:{user['id']}:commands")
+    for command in db.smembers(f"user:{user['id']}:commands"):
+        storage.remove_object("botbuilder", f"{user['id']}/{command}.js")
 
-    for file in os.listdir(user_directory):
-        if file.endswith(".js"):
-            os.remove(os.path.join(user_directory, file))
+    db.delete(f"user:{user['id']}:commands")
 
     # Add new commands and code
 
@@ -74,7 +74,9 @@ def save():
     for command in commands:
         if not command.filename.endswith(".js"):
             continue
-        command.save(os.path.join(user_directory, command.filename))
+
+        size = os.fstat(command.fileno()).st_size
+        storage.put_object("botbuilder", f"{user['id']}/{command.filename}", command, size)
 
         db.sadd(f"user:{user['id']}:commands", command.filename[:-3])
 
@@ -89,15 +91,12 @@ def load():
     discord = make_session(token=session.get('oauth2_token'))
     user = discord.get("https://discord.com/api/v8/users/@me").json()
 
-    user_directory = os.path.join(
-        current_app.config["UPLOAD_FOLDER"], user["id"])
-
-    filename = os.path.join(user_directory, "workspace.xml")
-
-    if not os.path.exists(filename):
+    try:
+        workspace = storage.get_object("botbuilder", f"{user['id']}/workspace.xml")
+    except minio.error.S3Error:
         # Nothing, return an empty workspace
         empty_workspace = \
             "<xml xmlns=\"https://developers.google.com/blockly/xml\"></xml>"
         return Response(empty_workspace, mimetype="text/xml")
-
-    return send_file(filename)
+    else:
+        return Response(workspace, mimetype="text/xml")
