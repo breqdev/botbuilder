@@ -1,13 +1,21 @@
 html, body {
     height: 100%;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
 }
 
 .box {
-  display: flex;
-  flex-flow: row;
-  height: 100%;
-  width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+@media (min-width: 1200px) {
+    .box {
+        flex-direction: row;
+    }
 }
 
 .user-banner {
@@ -38,14 +46,26 @@ img.avatar {
 }
 
 .blockly-editor {
-    height: 100%;
+    align-self: stretch;
     flex-grow: 1;
+    flex-basis: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.blockly-area {
+    display: flex;
 }
 
 .sidebar {
-    flex-basis: 500px;
     flex-grow: 0;
     padding: 20px;
+}
+
+@media (min-width: 1200px) {
+    .sidebar {
+        flex-basis: 500px;
+    }
 }
 
 .blockly-header {
@@ -66,8 +86,18 @@ img.avatar {
     font-style: italic;
 }
 
+#blocklyWrapper {
+    position: relative;
+    flex-grow: 1;
+}
+
 #blocklyArea {
     height: 100%;
+}
+
+#blocklyDiv {
+    position: absolute;
+    inset: 0;
 }
 
 #commandsList {
