@@ -21,7 +21,7 @@ def run_user_command(user_id, command_name):
     except minio.error.S3Error:
         return "Command Not Found", 404
 
-    command_fn = command_fn.read(decode_content=True)
+    command_fn = str(command_fn.read(decode_content=True), "utf-8")
 
     ctx = py_mini_racer.MiniRacer()
 
