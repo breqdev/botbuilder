@@ -1,27 +1,26 @@
 import os
 from py_mini_racer import py_mini_racer
-from flask import Blueprint, current_app, request, jsonify
+from flask import Blueprint, request, jsonify
 import redis
-import minio
+import boto3
+from botocore.errorfactory import ClientError
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
 
-db = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
-storage = minio.Minio(
-    os.environ["MINIO_ENDPOINT"],
-    access_key=os.environ["MINIO_ACCESS_KEY"],
-    secret_key=os.environ["MINIO_SECRET_KEY"]
-)
+from storage import s3, redis
+
 
 
 def run_user_command(user_id, command_name):
     try:
-        command_fn = storage.get_object(
-            "botbuilder", f"{user_id}/{command_name}.js")
-    except minio.error.S3Error:
+        command_fn = s3.get_object(
+            Bucket=os.environ["S3_BUCKET"],
+            Key=f"{user_id}/{command_name}.js"
+        )["Body"]
+    except ClientError:
         return "Command Not Found", 404
 
-    command_fn = str(command_fn.read(decode_content=True), "utf-8")
+    command_fn = str(command_fn.read(), "utf-8")
 
     ctx = py_mini_racer.MiniRacer()
 
@@ -33,10 +32,10 @@ def run_user_command(user_id, command_name):
 
 
 def run_command(guild_id, command_name):
-    users = db.smembers(f"guild:{guild_id}:users")
+    users = redis.smembers(f"guild:{guild_id}:users")
 
     for user_id in users:
-        if db.sismember(f"user:{user_id}:commands", command_name):
+        if redis.sismember(f"user:{user_id}:commands", command_name):
             break
     else:
         return "User Not Found", 404
